@@ -7,4 +7,4 @@ By the end, you will have a registered anomaly detection model in Snowflake's Mo
 
 ## Step-By-Step Guide
 
-For prerequisites, environment setup, step-by-step guide and instructions, please refer to the [QuickStart Guide](https://quickstarts.snowflake.com/guide/build_a_custom_model_for_anomaly_detection/index.html).
+For prerequisites, environment setup, step-by-step guide and instructions, please refer to the [QuickStart Guide]([https://quickstarts.snowflake.com/guide/building_a_custom_model_for_anomaly_detection/index.html?index=..%2F..index#0]).
