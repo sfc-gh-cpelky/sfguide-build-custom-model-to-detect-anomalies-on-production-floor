@@ -1,0 +1,12 @@
+name: app_environment
+channels:
+  - snowflake
+dependencies:
+  - python=3.11.*
+  - seaborn=0.13.2
+  - snowflake-snowpark-python
+  - streamlit
+  - snowflake-ml-python
+  - matplotlib
+  - snowflake
+  - snowflake.core
