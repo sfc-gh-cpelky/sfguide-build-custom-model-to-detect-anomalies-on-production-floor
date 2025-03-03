@@ -43,16 +43,53 @@ if st.button("Click button to carry inference and detect Anomalies"):
         # Create a Snowpark DataFrame
         X_train_snowdf = session.create_dataframe(queried_data)
 
+        # Ensure correct data types and select only the required numeric columns
+        numeric_columns = ['TEMPERATURE', 'VIBRATION', 'MOTOR_RPM', 'MOTOR_AMPS']
+
+        # Create a new DataFrame with only the required columns and proper data types
+        X_train_snowdf = X_train_snowdf.select([
+            X_train_snowdf[col].cast('double').alias(col)
+            for col in numeric_columns
+        ])
+
+        # Remove any null values
+        X_train_snowdf = X_train_snowdf.na.drop()
+
         # Set up the model
         db = session.get_current_database()
         schema = session.get_current_schema()
         model_name = "AnomalyDetection_Model_1"
-        model_version = "v1"
+        model_version = "v2"
         reg = Registry(session=session) 
         modelversion = reg.get_model(model_name).version(model_version)
 
-        # Run inference
-        X_pred = modelversion.run(X_train_snowdf, function_name="predict")
+        # Debug information
+        st.write("Input data types:", X_train_snowdf.dtypes)
+        st.write("Input data sample:", X_train_snowdf.limit(5).collect())
+
+        # Run inference with error handling
+        try:
+            # Convert DataFrame to pandas and ensure proper data types
+            input_data = X_train_snowdf.to_pandas()
+
+            # Ensure all columns are float32
+            input_data = input_data[numeric_columns].astype(np.float32)
+
+            # Create Snowpark DataFrame from the converted data
+            input_snowdf = session.create_dataframe(input_data)
+
+            # Explicitly specify column types
+            for col in numeric_columns:
+                input_snowdf = input_snowdf.withColumn(col, input_snowdf[col].cast('float'))
+
+            # Run prediction
+            X_pred = modelversion.run(input_snowdf, function_name="predict")
+
+        except Exception as e:
+            st.error(f"Error during prediction: {str(e)}")
+            st.write("Input data shape:", input_data.shape)
+            st.write("Input data types:", input_data.dtypes)
+            st.stop()
 
         # Rename the columns for better readability
         rename_mapping = {
@@ -61,8 +98,12 @@ if st.button("Click button to carry inference and detect Anomalies"):
             "feature_2": "MOTOR_RPM_LOSS_MAE",
             "feature_3": "MOTOR_AMPS_LOSS_MAE"
         }
-        X_predpdtest = X_pred.to_pandas()
-        X_predpdtest = X_predpdtest.rename(columns=rename_mapping)
+        try:
+            X_predpdtest = X_pred.to_pandas()
+            X_predpdtest = X_predpdtest.rename(columns=rename_mapping)
+        except Exception as e:
+            st.error(f"Error converting predictions to pandas: {str(e)}")
+            st.stop()
 
         # Display the results
         st.subheader("Inference Results")
